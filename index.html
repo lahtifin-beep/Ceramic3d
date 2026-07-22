@@ -2,29 +2,29 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>3D Панорама</title>
     <style>
         html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #000; }
-        #stage { width: 100%; height: 100%; perspective: 512px; -webkit-perspective: 512px; position: relative; overflow: hidden; }
+        #stage { width: 100%; height: 100%; perspective: 500px; position: relative; overflow: hidden; }
         #cube {
             position: absolute; width: 100%; height: 100%;
-            transform-style: preserve-3d; -webkit-transform-style: preserve-3d;
+            transform-style: preserve-3d;
             top: 50%; left: 50%;
         }
         .face {
             position: absolute; width: 1026px; height: 1026px;
             top: -513px; left: -513px;
             background-size: cover; background-position: center;
-            backface-visibility: visible; -webkit-backface-visibility: visible;
+            backface-visibility: visible;
         }
-        /* Оригинальная раскладка сторон, которая подошла вашему проекту */
-        .f-front  { transform: scaleX(-1) rotateY(180deg) translateZ(-512px); background-image: url('+Z.png'); }
-        .f-back   { transform: scaleX(-1) rotateY(  0deg) translateZ(-512px); background-image: url('-Z.png'); }
-        .f-right  { transform: scaleX(-1) rotateY( 90deg) translateZ(-512px); background-image: url('+X.png'); }
-        .f-left   { transform: scaleX(-1) rotateY(-90deg) translateZ(-512px); background-image: url('-X.png'); }
-        .f-top    { transform: scaleY(-1) rotateX( 90deg) translateZ(-512px); background-image: url('+Y.png'); }
-        .f-bottom { transform: scaleY(-1) rotateX(-90deg) translateZ(-512px); background-image: url('-Y.png'); }
+        /* Точный порядок и сдвиг граней из той самой первой работающей версии */
+        .f-front  { transform: rotateY(180deg) translateZ(512px); background-image: url('+Z.png'); }
+        .f-back   { transform: rotateY(  0deg) translateZ(512px); background-image: url('-Z.png'); }
+        .f-right  { transform: rotateY( 90deg) translateZ(512px); background-image: url('+X.png'); }
+        .f-left   { transform: rotateY(-90deg) translateZ(512px); background-image: url('-X.png'); }
+        .f-top    { transform: rotateX( 90deg) translateZ(512px); background-image: url('+Y.png'); }
+        .f-bottom { transform: rotateX(-90deg) translateZ(512px); background-image: url('-Y.png'); }
     </style>
 </head>
 <body>
@@ -44,7 +44,6 @@
 
         function updateRotation() {
             lat = Math.max(-85, Math.min(85, lat));
-            // Исходная формула вращения
             cube.style.transform = `rotateX(${lat}deg) rotateY(${lon}deg)`;
         }
 
@@ -54,9 +53,8 @@
         });
         window.addEventListener('pointermove', (e) => {
             if (!isMousedown) return;
-            // Исходное направление осей для мышки
-            lon = startLon + (e.clientX - startX) * 0.15;
-            lat = startLat - (e.clientY - startY) * 0.15;
+            lon = startLon - (e.clientX - startX) * 0.15;
+            lat = startLat + (e.clientY - startY) * 0.15;
             updateRotation();
         });
         window.addEventListener('pointerup', () => isMousedown = false);

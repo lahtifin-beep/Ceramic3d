@@ -6,87 +6,59 @@
     <title>3D Панорама</title>
     <style>
         html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #000; }
-        
-        /* Главная сцена */
-        #stage { 
-            width: 100%; height: 100%; 
-            perspective: 400px; -webkit-perspective: 400px; 
-            position: relative; overflow: hidden; 
-        }
-        
-        /* Внешний контейнер (вращается только влево-вправо по оси Y, удерживая горизонт ровным) */
-        #rotator-y {
-            position: absolute; width: 0; height: 0; top: 50%; left: 50%;
-            transform-style: preserve-3d; -webkit-transform-style: preserve-3d;
-        }
-
-        /* Внутренний контейнер (вращается только вверх-вниз по оси X) */
+        #stage { width: 100%; height: 100%; perspective: 512px; -webkit-perspective: 512px; position: relative; overflow: hidden; }
         #cube {
-            position: absolute; width: 0; height: 0;
+            position: absolute; width: 100%; height: 100%;
             transform-style: preserve-3d; -webkit-transform-style: preserve-3d;
+            top: 50%; left: 50%;
         }
-        
         .face {
-            position: absolute; 
-            width: 1024px; height: 1024px;
-            top: -512px; left: -512px;
-            background-size: 100% 100%; background-position: center;
-            background-repeat: no-repeat;
+            position: absolute; width: 1026px; height: 1026px;
+            top: -513px; left: -513px;
+            background-size: cover; background-position: center;
             backface-visibility: visible; -webkit-backface-visibility: visible;
         }
-        
-        /* Выворачиваем грани картинками внутрь */
-        .f-front  { transform: rotateY(180deg) translateZ(-512px) scaleX(-1); background-image: url('+Z.png'); }
-        .f-back   { transform: rotateY(  0deg) translateZ(-512px) scaleX(-1); background-image: url('-Z.png'); }
-        .f-right  { transform: rotateY( -90deg) translateZ(-512px) scaleX(-1); background-image: url('+X.png'); }
-        .f-left   { transform: rotateY(  90deg) translateZ(-512px) scaleX(-1); background-image: url('-X.png'); }
-        .f-top    { transform: rotateX(  90deg) translateZ(-512px) scaleY(-1); background-image: url('+Y.png'); }
-        .f-bottom { transform: rotateX( -90deg) translateZ(-512px) scaleY(-1); background-image: url('-Y.png'); }
+        /* Оригинальная раскладка сторон, которая подошла вашему проекту */
+        .f-front  { transform: scaleX(-1) rotateY(180deg) translateZ(-512px); background-image: url('+Z.png'); }
+        .f-back   { transform: scaleX(-1) rotateY(  0deg) translateZ(-512px); background-image: url('-Z.png'); }
+        .f-right  { transform: scaleX(-1) rotateY( 90deg) translateZ(-512px); background-image: url('+X.png'); }
+        .f-left   { transform: scaleX(-1) rotateY(-90deg) translateZ(-512px); background-image: url('-X.png'); }
+        .f-top    { transform: scaleY(-1) rotateX( 90deg) translateZ(-512px); background-image: url('+Y.png'); }
+        .f-bottom { transform: scaleY(-1) rotateX(-90deg) translateZ(-512px); background-image: url('-Y.png'); }
     </style>
 </head>
 <body>
     <div id="stage">
-        <div id="rotator-y">
-            <div id="cube">
-                <div class="face f-front"></div>
-                <div class="face f-back"></div>
-                <div class="face f-right"></div>
-                <div class="face f-left"></div>
-                <div class="face f-top"></div>
-                <div class="face f-bottom"></div>
-            </div>
+        <div id="cube">
+            <div class="face f-front"></div>
+            <div class="face f-back"></div>
+            <div class="face f-right"></div>
+            <div class="face f-left"></div>
+            <div class="face f-top"></div>
+            <div class="face f-bottom"></div>
         </div>
     </div>
     <script>
-        let rotY = document.getElementById('rotator-y');
         let cube = document.getElementById('cube');
         let lon = 0, lat = 0, startX, startY, startLon, startLat, isMousedown = false;
 
         function updateRotation() {
             lat = Math.max(-85, Math.min(85, lat));
-            
-            // Разделяем вращение: один слой крутит по горизонтали, второй — по вертикали. Завал исчезает!
-            rotY.style.transform = `rotateY(${-lon}deg)`;
-            cube.style.transform = `rotateX(${-lat}deg)`;
+            // Исходная формула вращения
+            cube.style.transform = `rotateX(${lat}deg) rotateY(${lon}deg)`;
         }
 
         window.addEventListener('pointerdown', (e) => {
-            isMousedown = true; 
-            startX = e.clientX; 
-            startY = e.clientY;
-            startLon = lon; 
-            startLat = lat;
+            isMousedown = true; startX = e.clientX; startY = e.clientY;
+            startLon = lon; startLat = lat;
         });
-
         window.addEventListener('pointermove', (e) => {
             if (!isMousedown) return;
-            
+            // Исходное направление осей для мышки
             lon = startLon + (e.clientX - startX) * 0.15;
-            lat = startLat + (e.clientY - startY) * 0.15;
-            
+            lat = startLat - (e.clientY - startY) * 0.15;
             updateRotation();
         });
-
         window.addEventListener('pointerup', () => isMousedown = false);
         updateRotation();
     </script>

@@ -1,46 +1,9 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>3D Панорама</title>
-    <style>
-        html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #000; }
-        #stage { width: 100%; height: 100%; perspective: 512px; position: relative; overflow: hidden; }
-        #cube {
-            position: absolute; width: 100%; height: 100%;
-            transform-style: preserve-3d;
-            top: 50%; left: 50%;
-        }
-        .face {
-            position: absolute; width: 1026px; height: 1026px;
-            top: -513px; left: -513px;
-            background-size: cover; background-position: center;
-            backface-visibility: visible;
-        }
-        /* Зеркальный разворот граней внутрь куба для правильного отображения Ceramic 3D */
-        .f-front  { transform: scaleX(-1) rotateY(180deg) translateZ(-512px); background-image: url('+Z.png'); }
-        .f-back   { transform: scaleX(-1) rotateY(  0deg) translateZ(-512px); background-image: url('-Z.png'); }
-        .f-right  { transform: scaleX(-1) rotateY( 90deg) translateZ(-512px); background-image: url('+X.png'); }
-        .f-left   { transform: scaleX(-1) rotateY(-90deg) translateZ(-512px); background-image: url('-X.png'); }
-        .f-top    { transform: scaleY(-1) rotateX( 90deg) translateZ(-512px); background-image: url('+Y.png'); }
-        .f-bottom { transform: scaleY(-1) rotateX(-90deg) translateZ(-512px); background-image: url('-Y.png'); }
-    </style>
-</head>
-<body>
-    <div id="stage">
-        <div id="cube">
-            <div class="face f-front"></div>
-            <div class="face f-back"></div>
-            <div class="face f-right"></div>
-            <div class="face f-left"></div>
-            <div class="face f-top"></div>
-            <div class="face f-bottom"></div>
-        </div>
-    </div>
     <script>
         let cube = document.getElementById('cube');
         let lon = 0, lat = 0, startX, startY, startLon, startLat, isMousedown = false;
+
+        // Определяем, открыт ли сайт с мобильного телефона
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
         function updateRotation() {
             lat = Math.max(-85, Math.min(85, lat));
@@ -48,18 +11,30 @@
         }
 
         window.addEventListener('pointerdown', (e) => {
-            isMousedown = true; startX = e.clientX; startY = e.clientY;
-            startLon = lon; startLat = lat;
+            isMousedown = true; 
+            startX = e.clientX; 
+            startY = e.clientY;
+            startLon = lon; 
+            startLat = lat;
         });
+
         window.addEventListener('pointermove', (e) => {
             if (!isMousedown) return;
-            // Инвертируем управление, так как мы смотрим изнутри
-            lon = startLon + (e.clientX - startX) * 0.15;
-            lat = startLat - (e.clientY - startY) * 0.15;
+            
+            // Разделяем управление для ПК и мобильного из-за вывернутого куба
+            if (isMobile) {
+                // Корректные оси и направления для сенсорного экрана смартфона
+                lon = startLon - (e.clientX - startX) * 0.15;
+                lat = startLat + (e.clientY - startY) * 0.15;
+            } else {
+                // Проверенное рабочее направление для мышки на компьютере
+                lon = startLon + (e.clientX - startX) * 0.15;
+                lat = startLat - (e.clientY - startY) * 0.15;
+            }
+            
             updateRotation();
         });
+
         window.addEventListener('pointerup', () => isMousedown = false);
         updateRotation();
     </script>
-</body>
-</html>

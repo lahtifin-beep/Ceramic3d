@@ -16,15 +16,16 @@
             position: absolute; width: 1026px; height: 1026px;
             top: -513px; left: -513px;
             background-size: cover; background-position: center;
-            backface-visibility: hidden;
+            /* Разворачиваем текстуру внутрь куба, чтобы убрать эффект вывернутых углов */
+            backface-visibility: visible;
         }
-        /* Чистые имена файлов .png */
-        .f-front  { transform: rotateY(  0deg) translateZ(-512px); background-image: url('+Z.png'); }
-        .f-back   { transform: rotateY(180deg) translateZ(-512px); background-image: url('-Z.png'); }
-        .f-right  { transform: rotateY( -90deg) translateZ(-512px); background-image: url('+X.png'); }
-        .f-left   { transform: rotateY(  90deg) translateZ(-512px); background-image: url('-X.png'); }
-        .f-top    { transform: rotateX( -90deg) translateZ(-512px); background-image: url('+Y.png'); }
-        .f-bottom { transform: rotateX(  90deg) translateZ(-512px); background-image: url('-Y.png'); }
+        /* Идеальное распределение граней и разворот осей для Ceramic 3D панорамы */
+        .f-front  { transform: rotateY(180deg) translateZ(512px); background-image: url('+Z.png'); }
+        .f-back   { transform: rotateY(  0deg) translateZ(512px); background-image: url('-Z.png'); }
+        .f-right  { transform: rotateY( 90deg) translateZ(512px); background-image: url('+X.png'); }
+        .f-left   { transform: rotateY(-90deg) translateZ(512px); background-image: url('-X.png'); }
+        .f-top    { transform: rotateX( 90deg) translateZ(512px); background-image: url('+Y.png'); }
+        .f-bottom { transform: rotateX(-90deg) translateZ(512px); background-image: url('-Y.png'); }
     </style>
 </head>
 <body>
@@ -53,8 +54,9 @@
         });
         window.addEventListener('pointermove', (e) => {
             if (!isMousedown) return;
-            lon = startLon + (e.clientX - startX) * 0.15;
-            lat = startLat - (e.clientY - startY) * 0.15;
+            // Плавное вращение головой внутри комнаты
+            lon = startLon - (e.clientX - startX) * 0.15;
+            lat = startLat + (e.clientY - startY) * 0.15;
             updateRotation();
         });
         window.addEventListener('pointerup', () => isMousedown = false);

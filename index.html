@@ -3,24 +3,93 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>3D Панорама</title>
+    <title>3D Панорама проекта</title>
     <style>
         html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #000; }
-        #canvas { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+        #view { width: 100%; height: 100%; }
     </style>
-    <!-- Официальный плеер Ceramic 3D из облака -->
-    <script src="https://ceramic3d.ru"></script>
+    <!-- Безопасное подключение современной 3D библиотеки через HTTPS -->
+    <script src="https://cloudflare.com"></script>
 </head>
 <body>
-    <div id="canvas"></div>
+    <div id="view"></div>
     <script>
-        // Запуск панорамы с использованием внешнего скрипта
-        if (typeof initPanorama === 'function') {
-            initPanorama("canvas", "camera.xml");
-        } else if (typeof Ceramic3D !== 'undefined' && Ceramic3D.Panorama) {
-            new Ceramic3D.Panorama("canvas", "camera.xml");
-        } else {
-            document.body.innerHTML = "<div style='color:white;text-align:center;padding:20px;'>Ошибка загрузки плеера панорамы.</div>";
+        // Скрипт автоматического сбора кубической панорамы Ceramic 3D
+        let scene, camera, renderer;
+        let isUserInteracting = false, onPointerDownPointerX = 0, onPointerDownPointerY = 0, onPointerDownLon = 0, onPointerDownLat = 0, lon = 0, lat = 0, phi = 0, theta = 0;
+
+        init();
+        animate();
+
+        function init() {
+            const container = document.getElementById('view');
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1100);
+            scene = new THREE.Scene();
+
+            // Текстуры куба из вашей папки панорамы (используем принудительное расширение .jpg)
+            const textures = [
+                new THREE.TextureLoader().load('+X.jpg'), new THREE.TextureLoader().load('-X.jpg'),
+                new THREE.TextureLoader().load('+Y.jpg'), new THREE.TextureLoader().load('-Y.jpg'),
+                new THREE.TextureLoader().load('+Z.jpg'), new THREE.TextureLoader().load('-Z.jpg')
+            ];
+
+            const materials = textures.map(tex => new THREE.MeshBasicMaterial({ map: tex, side: THREE.BackSide }));
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(300, 300, 300), materials);
+            scene.add(mesh);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
+
+            document.addEventListener('pointerdown', onPointerDown);
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function onPointerDown(event) {
+            if (event.isPrimary === false) return;
+            isUserInteracting = true;
+            onPointerDownPointerX = event.clientX;
+            onPointerDownPointerY = event.clientY;
+            onPointerDownLon = lon;
+            onPointerDownLat = lat;
+            document.addEventListener('pointermove', onPointerMove);
+            document.addEventListener('pointerup', onPointerUp);
+        }
+
+        function onPointerMove(event) {
+            if (event.isPrimary === false) return;
+            lon = (onPointerDownPointerX - event.clientX) * 0.1 + onPointerDownLon;
+            lat = (event.clientY - onPointerDownPointerY) * 0.1 + onPointerDownLat;
+        }
+
+        function onPointerUp() {
+            isUserInteracting = false;
+            document.removeEventListener('pointermove', onPointerMove);
+            document.removeEventListener('pointerup', onPointerUp);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            update();
+        }
+
+        function update() {
+            lat = Math.max(-85, Math.min(85, lat));
+            phi = THREE.MathUtils.degToRad(90 - lat);
+            theta = THREE.MathUtils.degToRad(lon);
+            const target = new THREE.Vector3();
+            target.x = 500 * Math.sin(phi) * Math.sin(theta);
+            target.y = 500 * Math.cos(phi);
+            target.z = 500 * Math.sin(phi) * Math.cos(theta);
+            camera.lookAt(target);
+            renderer.render(scene, camera);
         }
     </script>
 </body>

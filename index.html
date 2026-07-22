@@ -6,10 +6,11 @@
     <title>3D Панорама</title>
     <style>
         html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #000; }
-        /* Базовая сцена. Перспектива задается родителю, что критически важно для работы iOS Safari */
         #stage { width: 100%; height: 100%; perspective: 512px; -webkit-perspective: 512px; position: relative; overflow: hidden; }
         
-        /* Один общий 3D-контейнер для куба (без двойной вложенности, мешающей iPhone) */
+        /* Защитный контейнер: принудительно выпрямляет горизонт на Айфонах */
+        #gyro-fix { width: 100%; height: 100%; transform-style: preserve-3d; -webkit-transform-style: preserve-3d; }
+        
         #cube {
             position: absolute; width: 100%; height: 100%;
             transform-style: preserve-3d; -webkit-transform-style: preserve-3d;
@@ -21,7 +22,6 @@
             background-size: cover; background-position: center;
             backface-visibility: visible; -webkit-backface-visibility: visible;
         }
-        /* Разворачиваем грани внутрь. scaleX(-1) инвертирует картинки, чтобы они не были отзеркалены */
         .f-front  { transform: scaleX(-1) rotateY(180deg) translateZ(-512px); background-image: url('+Z.png'); }
         .f-back   { transform: scaleX(-1) rotateY(  0deg) translateZ(-512px); background-image: url('-Z.png'); }
         .f-right  { transform: scaleX(-1) rotateY( 90deg) translateZ(-512px); background-image: url('+X.png'); }
@@ -32,13 +32,15 @@
 </head>
 <body>
     <div id="stage">
-        <div id="cube">
-            <div class="face f-front"></div>
-            <div class="face f-back"></div>
-            <div class="face f-right"></div>
-            <div class="face f-left"></div>
-            <div class="face f-top"></div>
-            <div class="face f-bottom"></div>
+        <div id="gyro-fix">
+            <div id="cube">
+                <div class="face f-front"></div>
+                <div class="face f-back"></div>
+                <div class="face f-right"></div>
+                <div class="face f-left"></div>
+                <div class="face f-top"></div>
+                <div class="face f-bottom"></div>
+            </div>
         </div>
     </div>
     <script>
@@ -46,21 +48,9 @@
         let lon = 0, lat = 0, startX, startY, startLon, startLat, isMousedown = false;
 
         function updateRotation() {
-            // Ограничение взгляда (пол/потолок)
             lat = Math.max(-85, Math.min(85, lat));
-            
-            // Математическая фиксация горизонта: переводим углы в радианы
-            const radLat = lat * Math.PI / 180;
-            const radLon = lon * Math.PI / 180;
-
-            // Расчет матрицы вращения, независимой от наклона осей устройства
-            const cosLat = Math.cos(radLat);
-            const sinLat = Math.sin(radLat);
-            const cosLon = Math.cos(radLon);
-            const sinLon = Math.sin(radLon);
-
-            // Идеальное 3D-вращение одной строкой (работает везде без завалов и инверсий)
-            cube.style.transform = `matrix3d(${cosLon}, ${sinLat * sinLon}, ${cosLat * sinLon}, 0, 0, ${cosLat}, ${-sinLat}, 0, ${-sinLon}, ${sinLat * cosLon}, ${cosLat * cosLon}, 0, 0, 0, 0, 1)`;
+            // Возвращаем ту самую старую добрую строчку вращения, которая отлично работала на ПК!
+            cube.style.transform = `rotateX(${lat}deg) rotateY(${lon}deg)`;
         }
 
         window.addEventListener('pointerdown', (e) => {
@@ -74,7 +64,7 @@
         window.addEventListener('pointermove', (e) => {
             if (!isMousedown) return;
             
-            // Универсальная скорость и интуитивное направление трекинга для мыши и тач-панелей
+            // Возвращаем то самое старое послушное направление для мышки
             lon = startLon + (e.clientX - startX) * 0.15;
             lat = startLat - (e.clientY - startY) * 0.15;
             

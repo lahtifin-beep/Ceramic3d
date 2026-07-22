@@ -1,13 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>3D Панорама</title>
+    <style>
+        html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #000; }
+        /* Сцена с фиксацией перспективы */
+        #stage { width: 100%; height: 100%; perspective: 512px; position: relative; overflow: hidden; }
+        
+        /* Виртуальная камера для разделения осей вращения (убирает завал горизонта на смартфонах) */
+        #camera-y { position: absolute; width: 100%; height: 100%; transform-style: preserve-3d; top: 50%; left: 50%; }
+        #camera-x { position: absolute; width: 100%; height: 100%; transform-style: preserve-3d; }
+        
+        .face {
+            position: absolute; width: 1026px; height: 1026px;
+            top: -513px; left: -513px;
+            background-size: cover; background-position: center;
+            backface-visibility: visible;
+        }
+        /* Разворот граней внутрь куба для правильного отображения Ceramic 3D */
+        .f-front  { transform: scaleX(-1) rotateY(180deg) translateZ(-512px); background-image: url('+Z.png'); }
+        .f-back   { transform: scaleX(-1) rotateY(  0deg) translateZ(-512px); background-image: url('-Z.png'); }
+        .f-right  { transform: scaleX(-1) rotateY( 90deg) translateZ(-512px); background-image: url('+X.png'); }
+        .f-left   { transform: scaleX(-1) rotateY(-90deg) translateZ(-512px); background-image: url('-X.png'); }
+        .f-top    { transform: scaleY(-1) rotateX( 90deg) translateZ(-512px); background-image: url('+Y.png'); }
+        .f-bottom { transform: scaleY(-1) rotateX(-90deg) translateZ(-512px); background-image: url('-Y.png'); }
+    </style>
+</head>
+<body>
+    <div id="stage">
+        <!-- Двухуровневая система вращения -->
+        <div id="camera-y">
+            <div id="camera-x">
+                <div class="face f-front"></div>
+                <div class="face f-back"></div>
+                <div class="face f-right"></div>
+                <div class="face f-left"></div>
+                <div class="face f-top"></div>
+                <div class="face f-bottom"></div>
+            </div>
+        </div>
+    </div>
     <script>
-        let cube = document.getElementById('cube');
+        let camY = document.getElementById('camera-y');
+        let camX = document.getElementById('camera-x');
         let lon = 0, lat = 0, startX, startY, startLon, startLat, isMousedown = false;
 
-        // Определяем, открыт ли сайт с мобильного телефона
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
         function updateRotation() {
+            // Ограничиваем взгляд строго вверх и строго вниз
             lat = Math.max(-85, Math.min(85, lat));
-            cube.style.transform = `rotateX(${lat}deg) rotateY(${lon}deg)`;
+            
+            // Разделяем трансформации: Y крутит влево-вправо, X крутит вверх-вниз
+            camY.style.transform = `rotateY(${lon}deg)`;
+            camX.style.transform = `rotateX(${lat}deg)`;
         }
 
         window.addEventListener('pointerdown', (e) => {
@@ -21,16 +67,9 @@
         window.addEventListener('pointermove', (e) => {
             if (!isMousedown) return;
             
-            // Разделяем управление для ПК и мобильного из-за вывернутого куба
-            if (isMobile) {
-                // Корректные оси и направления для сенсорного экрана смартфона
-                lon = startLon - (e.clientX - startX) * 0.15;
-                lat = startLat + (e.clientY - startY) * 0.15;
-            } else {
-                // Проверенное рабочее направление для мышки на компьютере
-                lon = startLon + (e.clientX - startX) * 0.15;
-                lat = startLat - (e.clientY - startY) * 0.15;
-            }
+            // Универсальное интуитивное управление для всех устройств
+            lon = startLon + (e.clientX - startX) * 0.15;
+            lat = startLat - (e.clientY - startY) * 0.15;
             
             updateRotation();
         });
@@ -38,3 +77,5 @@
         window.addEventListener('pointerup', () => isMousedown = false);
         updateRotation();
     </script>
+</body>
+</html>

@@ -3,94 +3,62 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>3D Панорама проекта</title>
+    <title>3D Панорама</title>
     <style>
         html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #000; }
-        #view { width: 100%; height: 100%; }
+        #stage { width: 100%; height: 100%; perspective: 500px; position: relative; overflow: hidden; }
+        #cube {
+            position: absolute; width: 100%; height: 100%;
+            transform-style: preserve-3d;
+            top: 50%; left: 50%;
+        }
+        .face {
+            position: absolute; width: 1026px; height: 1026px;
+            top: -513px; left: -513px;
+            background-size: cover; background-position: center;
+            backface-visibility: hidden;
+        }
+        /* Чистые имена файлов .png */
+        .f-front  { transform: rotateY(  0deg) translateZ(-512px); background-image: url('+Z.png'); }
+        .f-back   { transform: rotateY(180deg) translateZ(-512px); background-image: url('-Z.png'); }
+        .f-right  { transform: rotateY( -90deg) translateZ(-512px); background-image: url('+X.png'); }
+        .f-left   { transform: rotateY(  90deg) translateZ(-512px); background-image: url('-X.png'); }
+        .f-top    { transform: rotateX( -90deg) translateZ(-512px); background-image: url('+Y.png'); }
+        .f-bottom { transform: rotateX(  90deg) translateZ(-512px); background-image: url('-Y.png'); }
     </style>
-    <!-- Безопасное подключение современной 3D библиотеки через HTTPS -->
-    <script src="https://cloudflare.com"></script>
 </head>
 <body>
-    <div id="view"></div>
+    <div id="stage">
+        <div id="cube">
+            <div class="face f-front"></div>
+            <div class="face f-back"></div>
+            <div class="face f-right"></div>
+            <div class="face f-left"></div>
+            <div class="face f-top"></div>
+            <div class="face f-bottom"></div>
+        </div>
+    </div>
     <script>
-        // Скрипт автоматического сбора кубической панорамы Ceramic 3D
-        let scene, camera, renderer;
-        let isUserInteracting = false, onPointerDownPointerX = 0, onPointerDownPointerY = 0, onPointerDownLon = 0, onPointerDownLat = 0, lon = 0, lat = 0, phi = 0, theta = 0;
+        let cube = document.getElementById('cube');
+        let lon = 0, lat = 0, startX, startY, startLon, startLat, isMousedown = false;
 
-        init();
-        animate();
-
-        function init() {
-            const container = document.getElementById('view');
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1100);
-            scene = new THREE.Scene();
-
-            // Текстуры куба из вашей папки панорамы (используем принудительное расширение .jpg)
-            const textures = [
-                new THREE.TextureLoader().load('+X.jpg'), new THREE.TextureLoader().load('-X.jpg'),
-                new THREE.TextureLoader().load('+Y.jpg'), new THREE.TextureLoader().load('-Y.jpg'),
-                new THREE.TextureLoader().load('+Z.jpg'), new THREE.TextureLoader().load('-Z.jpg')
-            ];
-
-            const materials = textures.map(tex => new THREE.MeshBasicMaterial({ map: tex, side: THREE.BackSide }));
-            const mesh = new THREE.Mesh(new THREE.BoxGeometry(300, 300, 300), materials);
-            scene.add(mesh);
-
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            container.appendChild(renderer.domElement);
-
-            document.addEventListener('pointerdown', onPointerDown);
-            window.addEventListener('resize', onWindowResize);
-        }
-
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        function onPointerDown(event) {
-            if (event.isPrimary === false) return;
-            isUserInteracting = true;
-            onPointerDownPointerX = event.clientX;
-            onPointerDownPointerY = event.clientY;
-            onPointerDownLon = lon;
-            onPointerDownLat = lat;
-            document.addEventListener('pointermove', onPointerMove);
-            document.addEventListener('pointerup', onPointerUp);
-        }
-
-        function onPointerMove(event) {
-            if (event.isPrimary === false) return;
-            lon = (onPointerDownPointerX - event.clientX) * 0.1 + onPointerDownLon;
-            lat = (event.clientY - onPointerDownPointerY) * 0.1 + onPointerDownLat;
-        }
-
-        function onPointerUp() {
-            isUserInteracting = false;
-            document.removeEventListener('pointermove', onPointerMove);
-            document.removeEventListener('pointerup', onPointerUp);
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-            update();
-        }
-
-        function update() {
+        function updateRotation() {
             lat = Math.max(-85, Math.min(85, lat));
-            phi = THREE.MathUtils.degToRad(90 - lat);
-            theta = THREE.MathUtils.degToRad(lon);
-            const target = new THREE.Vector3();
-            target.x = 500 * Math.sin(phi) * Math.sin(theta);
-            target.y = 500 * Math.cos(phi);
-            target.z = 500 * Math.sin(phi) * Math.cos(theta);
-            camera.lookAt(target);
-            renderer.render(scene, camera);
+            cube.style.transform = `rotateX(${lat}deg) rotateY(${lon}deg)`;
         }
+
+        window.addEventListener('pointerdown', (e) => {
+            isMousedown = true; startX = e.clientX; startY = e.clientY;
+            startLon = lon; startLat = lat;
+        });
+        window.addEventListener('pointermove', (e) => {
+            if (!isMousedown) return;
+            lon = startLon + (e.clientX - startX) * 0.15;
+            lat = startLat - (e.clientY - startY) * 0.15;
+            updateRotation();
+        });
+        window.addEventListener('pointerup', () => isMousedown = false);
+        updateRotation();
     </script>
 </body>
 </html>

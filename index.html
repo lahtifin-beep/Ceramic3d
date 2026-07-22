@@ -1,66 +1,13 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>3D Панорама</title>
-    <style>
-        html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #000; }
-        /* Базовая сцена. Перспектива задается родителю, что критически важно для работы iOS Safari */
-        #stage { width: 100%; height: 100%; perspective: 512px; -webkit-perspective: 512px; position: relative; overflow: hidden; }
-        
-        /* Один общий 3D-контейнер для куба (без двойной вложенности, мешающей iPhone) */
-        #cube {
-            position: absolute; width: 100%; height: 100%;
-            transform-style: preserve-3d; -webkit-transform-style: preserve-3d;
-            top: 50%; left: 50%;
-        }
-        .face {
-            position: absolute; width: 1026px; height: 1026px;
-            top: -513px; left: -513px;
-            background-size: cover; background-position: center;
-            backface-visibility: visible; -webkit-backface-visibility: visible;
-        }
-        /* Разворачиваем грани внутрь. scaleX(-1) инвертирует картинки, чтобы они не были отзеркалены */
-        .f-front  { transform: scaleX(-1) rotateY(180deg) translateZ(-512px); background-image: url('+Z.png'); }
-        .f-back   { transform: scaleX(-1) rotateY(  0deg) translateZ(-512px); background-image: url('-Z.png'); }
-        .f-right  { transform: scaleX(-1) rotateY( 90deg) translateZ(-512px); background-image: url('+X.png'); }
-        .f-left   { transform: scaleX(-1) rotateY(-90deg) translateZ(-512px); background-image: url('-X.png'); }
-        .f-top    { transform: scaleY(-1) rotateX( 90deg) translateZ(-512px); background-image: url('+Y.png'); }
-        .f-bottom { transform: scaleY(-1) rotateX(-90deg) translateZ(-512px); background-image: url('-Y.png'); }
-    </style>
-</head>
-<body>
-    <div id="stage">
-        <div id="cube">
-            <div class="face f-front"></div>
-            <div class="face f-back"></div>
-            <div class="face f-right"></div>
-            <div class="face f-left"></div>
-            <div class="face f-top"></div>
-            <div class="face f-bottom"></div>
-        </div>
-    </div>
     <script>
-        const cube = document.getElementById('cube');
+        let cube = document.getElementById('cube');
         let lon = 0, lat = 0, startX, startY, startLon, startLat, isMousedown = false;
 
+        // Определяем, открыт ли сайт с мобильного телефона
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
         function updateRotation() {
-            // Ограничение взгляда (пол/потолок)
             lat = Math.max(-85, Math.min(85, lat));
-            
-            // Математическая фиксация горизонта: переводим углы в радианы
-            const radLat = lat * Math.PI / 180;
-            const radLon = lon * Math.PI / 180;
-
-            // Расчет матрицы вращения, независимой от наклона осей устройства
-            const cosLat = Math.cos(radLat);
-            const sinLat = Math.sin(radLat);
-            const cosLon = Math.cos(radLon);
-            const sinLon = Math.sin(radLon);
-
-            // Идеальное 3D-вращение одной строкой (работает везде без завалов и инверсий)
-            cube.style.transform = `matrix3d(${cosLon}, ${sinLat * sinLon}, ${cosLat * sinLon}, 0, 0, ${cosLat}, ${-sinLat}, 0, ${-sinLon}, ${sinLat * cosLon}, ${cosLat * cosLon}, 0, 0, 0, 0, 1)`;
+            cube.style.transform = `rotateX(${lat}deg) rotateY(${lon}deg)`;
         }
 
         window.addEventListener('pointerdown', (e) => {
@@ -74,9 +21,16 @@
         window.addEventListener('pointermove', (e) => {
             if (!isMousedown) return;
             
-            // Универсальная скорость и интуитивное направление трекинга для мыши и тач-панелей
-            lon = startLon + (e.clientX - startX) * 0.15;
-            lat = startLat + (e.clientY - startY) * 0.15;
+            // Разделяем управление для ПК и мобильного из-за вывернутого куба
+            if (isMobile) {
+                // Корректные оси и направления для сенсорного экрана смартфона
+                lon = startLon - (e.clientX - startX) * 0.15;
+                lat = startLat + (e.clientY - startY) * 0.15;
+            } else {
+                // Проверенное рабочее направление для мышки на компьютере
+                lon = startLon + (e.clientX - startX) * 0.15;
+                lat = startLat - (e.clientY - startY) * 0.15;
+            }
             
             updateRotation();
         });
@@ -84,5 +38,3 @@
         window.addEventListener('pointerup', () => isMousedown = false);
         updateRotation();
     </script>
-</body>
-</html>

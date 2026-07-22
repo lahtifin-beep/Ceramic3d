@@ -7,22 +7,25 @@
     <style>
         html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #000; }
         
-        /* Главная сцена с эффектом присутствия (уменьшаем фокусное расстояние, чтобы зайти внутрь комнаты) */
+        /* Главная сцена */
         #stage { 
             width: 100%; height: 100%; 
             perspective: 400px; -webkit-perspective: 400px; 
             position: relative; overflow: hidden; 
         }
         
-        /* Контейнер куба жестко центрируется на экране и блокирует завалы */
+        /* Внешний контейнер (вращается только влево-вправо по оси Y, удерживая горизонт ровным) */
+        #rotator-y {
+            position: absolute; width: 0; height: 0; top: 50%; left: 50%;
+            transform-style: preserve-3d; -webkit-transform-style: preserve-3d;
+        }
+
+        /* Внутренний контейнер (вращается только вверх-вниз по оси X) */
         #cube {
-            position: absolute; 
-            width: 0; height: 0;
-            top: 50%; left: 50%;
+            position: absolute; width: 0; height: 0;
             transform-style: preserve-3d; -webkit-transform-style: preserve-3d;
         }
         
-        /* Каждая грань куба Ceramic 3D имеет размер 1024x1024 пикселей */
         .face {
             position: absolute; 
             width: 1024px; height: 1024px;
@@ -32,7 +35,7 @@
             backface-visibility: visible; -webkit-backface-visibility: visible;
         }
         
-        /* Выворачиваем грани картинками внутрь и сдвигаем от центра ровно на половину размера (512px) */
+        /* Выворачиваем грани картинками внутрь */
         .f-front  { transform: rotateY(180deg) translateZ(-512px) scaleX(-1); background-image: url('+Z.png'); }
         .f-back   { transform: rotateY(  0deg) translateZ(-512px) scaleX(-1); background-image: url('-Z.png'); }
         .f-right  { transform: rotateY( -90deg) translateZ(-512px) scaleX(-1); background-image: url('+X.png'); }
@@ -43,25 +46,28 @@
 </head>
 <body>
     <div id="stage">
-        <div id="cube">
-            <div class="face f-front"></div>
-            <div class="face f-back"></div>
-            <div class="face f-right"></div>
-            <div class="face f-left"></div>
-            <div class="face f-top"></div>
-            <div class="face f-bottom"></div>
+        <div id="rotator-y">
+            <div id="cube">
+                <div class="face f-front"></div>
+                <div class="face f-back"></div>
+                <div class="face f-right"></div>
+                <div class="face f-left"></div>
+                <div class="face f-top"></div>
+                <div class="face f-bottom"></div>
+            </div>
         </div>
     </div>
     <script>
+        let rotY = document.getElementById('rotator-y');
         let cube = document.getElementById('cube');
         let lon = 0, lat = 0, startX, startY, startLon, startLat, isMousedown = false;
 
         function updateRotation() {
-            // Ограничение взгляда вверх и вниз
             lat = Math.max(-85, Math.min(85, lat));
             
-            // Направление вращения куба вокруг центральной точки
-            cube.style.transform = `rotateX(${-lat}deg) rotateY(${-lon}deg)`;
+            // Разделяем вращение: один слой крутит по горизонтали, второй — по вертикали. Завал исчезает!
+            rotY.style.transform = `rotateY(${-lon}deg)`;
+            cube.style.transform = `rotateX(${-lat}deg)`;
         }
 
         window.addEventListener('pointerdown', (e) => {
@@ -75,7 +81,6 @@
         window.addEventListener('pointermove', (e) => {
             if (!isMousedown) return;
             
-            // Настройка скорости поворота головы в комнате
             lon = startLon + (e.clientX - startX) * 0.15;
             lat = startLat + (e.clientY - startY) * 0.15;
             
